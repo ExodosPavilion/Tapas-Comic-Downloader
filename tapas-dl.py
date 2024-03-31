@@ -6,6 +6,8 @@ import argparse
 import re
 import requests
 import http.cookiejar
+import sys
+import json
 
 
 def lead0(num, max):
@@ -46,6 +48,23 @@ def check_path(path, slash=True, fat=False):
     return ''.join([char for char in path if char not in evil_chars])
 
 
+def loadDatabase(databaseJsonPath = 'database.json'):
+    database = {}
+
+    if os.path.isfile(databaseJsonPath):
+        with open(databaseJsonPath, 'r') as file:
+            database = json.load(file)
+    else:
+        sys.exit(1)
+
+    return database
+
+def savedatabase(database, databaseJsonPath = 'database.json'):
+    # Save the database data
+    with open(databaseJsonPath, 'w') as file:
+        json.dump(database, file, indent=4)
+
+
 # parse input and settup help
 parser = argparse.ArgumentParser(description='Downloads Comics from \'https://tapas.io\'.\nIf folder of downloaded comic is found, it will only update (can be disabled with -f/--force).', formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('url', metavar='URL/name', type=str, nargs='+',
@@ -61,6 +80,8 @@ parser.add_argument('-e', '--extra', action="store_true", help='Lets this script
 
 args = parser.parse_args()
 
+database = {}
+
 s = requests.Session()
 s.headers.update({'user-agent': 'tapas-dl'})
 if args.cookies:
@@ -74,6 +95,9 @@ if args.extra:
     helperScriptActive = True
 else:
     helperScriptActive = False
+
+if helperScriptActive:
+    database = loadDatabase()
 
 basePath = ""
 if (args.baseDir):
@@ -159,6 +183,11 @@ for urlCount, url in enumerate(args.url):
         pageOffset = 0
         imgOffset = 0
 
+    if helperScriptActive:
+        printLine()
+        printLine('~~Extra output~~\npageOffset: {}\nimgOffset: {}\nLength of Data: {}'.format(pageOffset, imgOffset, len(data)))
+        printLine()
+
     # Download header
     # Check if the header already exists in the dir
     if True not in [file.name.startswith('-1 - header.') for file in os.scandir(savePath)]:
@@ -176,6 +205,11 @@ for urlCount, url in enumerate(args.url):
     # Check if truncating the data made the list empty
     if len(data) <= 0:
         print('Nothing todo: No pages found or all already downloaded\n')
+        continue
+
+    # Check if the remaing data is simply for content that is coming soon
+    if len(pq(s.get(f'https://tapas.io/episode/{data[0]["id"]}').content)('h1:contains("Coming Soon!")')) > 0:
+        print('Nothing todo: Only unreleased content left\n')
         continue
 
     # Check if series is comic or novel
@@ -201,6 +235,10 @@ for urlCount, url in enumerate(args.url):
                 pageHtml = pq(s.get(f'https://tapas.io/episode/{pageData["id"]}').content)
 
                 printLine('Downloaded image data from {} images (pages {}/{})...'.format(allImgCount, pageCount + pageOffset, len(data) + pageOffset), True)
+                if helperScriptActive:
+                    printLine()
+                    printLine('~~Extra output~~\nallImgCount: {}\npageCount: {}\npageOffset: {}'.format(allImgCount, pageCount, pageOffset))
+                    printLine()
 
                 pageData['title'] = pageHtml('.info__title').text()
 
@@ -312,3 +350,7 @@ for urlCount, url in enumerate(args.url):
         for file in os.listdir(savePath):
             os.remove(os.path.join(savePath, file))
         os.removedirs(savePath)
+
+    
+if helperScriptActive:
+    sys.exit(0)
