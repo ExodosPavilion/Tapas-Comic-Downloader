@@ -1,0 +1,6 @@
+{
+    "persistCharRestriction": false,
+    "persistVerbose": true,
+    "useCookies": false,
+    "cookieTxtLocation": "cookies.txt"
+}

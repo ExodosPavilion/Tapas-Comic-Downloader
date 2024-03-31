@@ -57,6 +57,7 @@ parser.add_argument('-c', '--cookies', type=str, nargs='?', default="", dest='co
                     help='Optional cookies.txt file to load, can be used to allow the script to "log in" and circumvent age verification.')
 parser.add_argument('-o', '--output-dir', type=str, nargs='?', default="", dest='baseDir', metavar='PATH',
                     help='Output directory where comics should be placed.\nIf left blank, the script folder will be used.')
+parser.add_argument('-e', '--extra', action="store_true", help='Lets this script know that the helper script (tdl-helper.py) will be affecting it.')
 
 args = parser.parse_args()
 
@@ -68,6 +69,11 @@ if args.cookies:
 # FIXME Those cookies should be set, but no idea how...
 #s.cookies.update({'birthDate': '1901-01-01'})
 #s.cookies.update({'adjustedBirthDate': '1901-01-01'})
+
+if args.extra:
+    helperScriptActive = True
+else:
+    helperScriptActive = False
 
 basePath = ""
 if (args.baseDir):
@@ -120,21 +126,28 @@ for urlCount, url in enumerate(args.url):
     if os.path.isdir(savePath) and not args.force:
         printLine('Found directory, only updating (use -f/--force to disable)')
 
-        filesInDir = list(os.scandir(savePath))
+        filesInDir = list(os.scandir(savePath)) # List all the files in the dir
 
+        # Get all the file names
         fileNames = []
         for fileInDir in filesInDir:
             fileNames.append(fileInDir.name)
+        # Sort the file names
         fileNames.sort()
 
+        # Set the offset so new files do not overwrite old ones
         imgOffset = len(fileNames)
 
+        # If the image offest is not zero
         if imgOffset > 1:
-            lastFile = fileNames[-1]
-            lastPageId = int(lastFile[lastFile.rindex('#') + 1:lastFile.rindex('.')])
+            lastFile = fileNames[-1] # Get the last file name used
+            lastPageId = int(lastFile[lastFile.rindex('#') + 1:lastFile.rindex('.')]) # Parse the filename to get what the last pageID was
 
-            pageOffset = next(i for i, page in enumerate(data) if page['id'] == lastPageId) + 1
+            # Honestly no idea what's going on here
+            # Best guess is that its going over all the page ids and finding the index that matches the lastPageId value
+            pageOffset = next(i for i, page in enumerate(data) if page['id'] == lastPageId) + 1 
 
+            # Tuncate the data such that it starts from the pageOffset index
             data = data[pageOffset:]
         else:
             pageOffset = 0
@@ -147,9 +160,11 @@ for urlCount, url in enumerate(args.url):
         imgOffset = 0
 
     # Download header
+    # Check if the header already exists in the dir
     if True not in [file.name.startswith('-1 - header.') for file in os.scandir(savePath)]:
         printLine('Downloading header...', True)
 
+        # Check if/Ensure the page has a header to retrive
         if headerSrc is not None:
             with open(os.path.join(savePath, '-1 - header.{}'.format(headerSrc[headerSrc.rindex('.') + 1:])), 'wb') as f:
                 f.write(s.get(headerSrc).content)
@@ -158,6 +173,7 @@ for urlCount, url in enumerate(args.url):
         else:
             printLine('Header not found')
 
+    # Check if truncating the data made the list empty
     if len(data) <= 0:
         print('Nothing todo: No pages found or all already downloaded\n')
         continue
@@ -200,7 +216,7 @@ for urlCount, url in enumerate(args.url):
 
             for imgOfPageCount, img in enumerate(pageData['imgs']):
 
-                # Check if the first image entry is the fummy text that indicates the page was unavailable when we tried to scrape it.
+                # Check if the first image entry is the dummy text that indicates the page was unavailable when we tried to scrape it.
                 if pageData['imgs'][0] != "PageUnavailable":
                     # If the entry isn't a dummy entry, go ahead and download the images it contains.
                     with open(os.path.join(savePath, check_path('{} - {} - {} - {} - #{}.{}'.format(lead0(imgCount + imgOffset, allImgCount + imgOffset), lead0(pageCount + pageOffset, len(pageData) + pageOffset),
@@ -216,6 +232,7 @@ for urlCount, url in enumerate(args.url):
                     printLine('Error: No images downloaded from page {}/{}.'.format(pageCount + pageOffset, len(data) + pageOffset), True)
 
         if data != []:
+            # Tell the user how many images were succesfully downloaded from all the images found
             printLine('Downloaded {} of {} images'.format(imgCount, allImgCount))
         else:
             printLine('Nothing to do')
