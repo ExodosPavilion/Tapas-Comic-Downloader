@@ -3,6 +3,6 @@
     "persistVerbose": true,
     "useCookies": false,
     "cookieTxtLocation": "cookies.txt",
-    "chagneOutput": true,
+    "changeOutput": true,
     "outputLocation": "DL-Dir"
 }

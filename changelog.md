@@ -44,4 +44,7 @@ The versions are numbered as follows: x.y.z
 - v.0.1.5
 	- Create changelog.md
  		- Created a file to keep track of all changes and updates done in the project
+- v.0.1.6
+	- Fixed a spelling mistake
+		- I noticed that the config file had a variable name that was misspelled so I changed it and updated the config file
  

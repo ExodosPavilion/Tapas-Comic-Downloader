@@ -43,7 +43,7 @@ def initConfig(configJsonPath = 'config.json'):
     initConfig["persistVerbose"] = True
     initConfig["useCookies"] = False
     initConfig["cookieTxtLocation"] = "cookies.txt"
-    initConfig["chagneOutput"] = True
+    initConfig["changeOutput"] = True
     initConfig["outputLocation"] = "DL-Dir"
 
     saveConfig(initConfig, configJsonPath)
@@ -145,7 +145,7 @@ def loadCommand(url = '', config = {}):
         if config['useCookies']:
             command.append('-c')
             command.append(config['cookieTxtLocation'])
-        if config['chagneOutput']:
+        if config['changeOutput']:
             command.append('-o')
             command.append(config['outputLocation'])
 
@@ -196,4 +196,4 @@ if(command != []):
     subprocess.check_call(command, stdout=sys.stdout, stderr=subprocess.STDOUT)
 '''
 
-checkForUpdates(database, config)
+#checkForUpdates(database, config)
